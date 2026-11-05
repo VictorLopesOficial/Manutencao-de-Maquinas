@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Abrir OS</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <nav><a href="manutencao.html">Área da manutenção</a></nav>
+      <h1>Abrir Ordem de Serviço</h1>
+      <form id="f">
+        <label>PIN da equipe</label>
+        <input id="pin" type="password" inputmode="numeric" required />
+
+        <label>TAG da máquina</label>
+        <input id="tag" list="tags" placeholder="ex.: APT01" autocomplete="off" required />
+        <datalist id="tags"></datalist>
+        <div id="maq" style="font-size:.9rem;opacity:.8"></div>
+
+        <label>Obra de origem</label>
+        <select id="obra" required></select>
+
+        <label>Causa da OS</label>
+        <select id="causa" required></select>
+
+        <label>Ocorrência (o que aconteceu?)</label>
+        <textarea id="oc" required></textarea>
+
+        <label>Seu nome</label>
+        <input id="nome" required />
+
+        <label>Foto da máquina (obrigatória)</label>
+        <input id="foto" type="file" accept="image/*" capture="environment" required />
+        <img id="prev" alt="" />
+
+        <button id="b">Enviar OS</button>
+        <div id="msg"></div>
+      </form>
+    </main>
+
+    <script src="config.js"></script>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let tags = {};
+
+      fetch('tags.json')
+        .then((r) => r.json())
+        .then((list) => {
+          list.forEach((t) => {
+            tags[t.tag.toUpperCase()] = t.maquina;
+            const o = document.createElement('option');
+            o.value = t.tag;
+            o.label = t.maquina;
+            $('tags').append(o);
+          });
+        });
+
+      for (const [id, items] of [['obra', OBRAS], ['causa', CAUSAS]]) {
+        $(id).innerHTML = items.map((x) => `<option>${x}</option>`).join('');
+      }
+
+      $('tag').oninput = () => {
+        $('maq').textContent = tags[$('tag').value.toUpperCase()] || '';
+      };
+
+      $('pin').value = localStorage.getItem('pinAbrir') || '';
+
+      function comprime(file) {
+        return new Promise((ok, no) => {
+          const im = new Image();
+          im.onload = () => {
+            const s = Math.min(1, 1280 / Math.max(im.width, im.height));
+            const c = document.createElement('canvas');
+            c.width = Math.max(1, Math.round(im.width * s));
+            c.height = Math.max(1, Math.round(im.height * s));
+            const ctx = c.getContext('2d');
+            ctx.drawImage(im, 0, 0, c.width, c.height);
+            c.toBlob((blob) => {
+              if (!blob) return no(new Error('Falha ao comprimir imagem'));
+              const fr = new FileReader();
+              fr.onload = () => ok(String(fr.result).split(',')[1]);
+              fr.onerror = () => no(new Error('Falha ao ler imagem'));
+              fr.readAsDataURL(blob);
+            }, 'image/jpeg', 0.8);
+          };
+          im.onerror = () => no(new Error('Imagem inválida'));
+          im.src = URL.createObjectURL(file);
+        });
+      }
+
+      $('foto').onchange = (e) => {
+        const f = e.target.files[0];
+        if (f) {
+          $('prev').src = URL.createObjectURL(f);
+          $('prev').style.display = 'block';
+        }
+      };
+
+      $('f').onsubmit = async (e) => {
+        e.preventDefault();
+        const m = $('msg');
+        m.className = '';
+        m.textContent = 'Enviando...';
+        $('b').disabled = true;
+
+        try {
+          const tag = $('tag').value.trim().toUpperCase();
+          if (!$('foto').files[0]) throw Error('A foto é obrigatória');
+
+          const foto = await comprime($('foto').files[0]);
+          const r = await fetch(API + '/abrir', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              pin: $('pin').value,
+              tag,
+              maquina: tags[tag] || '',
+              obra: $('obra').value,
+              causa: $('causa').value,
+              ocorrencia: $('oc').value,
+              nome: $('nome').value,
+              foto,
+            }),
+          });
+
+          const d = await r.json();
+          if (!r.ok) throw Error(d.erro || 'Erro');
+
+          localStorage.setItem('pinAbrir', $('pin').value);
+          m.className = 'ok';
+          m.textContent = 'OS #' + d.numero + ' aberta com sucesso!';
+          $('f').reset();
+          $('prev').style.display = 'none';
+          $('pin').value = localStorage.getItem('pinAbrir') || '';
+        } catch (x) {
+          m.className = 'erro';
+          m.textContent = x.message;
+        } finally {
+          $('b').disabled = false;
+        }
+      };
+    </script>
+  </body>
+</html>

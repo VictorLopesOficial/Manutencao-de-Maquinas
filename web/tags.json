@@ -1,0 +1,9 @@
+[
+  {"tag":"APT01","maquina":"Alicate prensa terminal hidráulico","status":"Liberado P/ Uso"},
+  {"tag":"APT02","maquina":"Alicate prensa terminal hidráulico","status":"Liberado P/ Uso"},
+  {"tag":"APT03","maquina":"Alicate prensa terminal hidráulico","status":"Em Manutenção"},
+  {"tag":"BAS01","maquina":"Batedor de argamassa","status":"Em Obra"},
+  {"tag":"BET01","maquina":"Betoneira","status":"Em Obra"},
+  {"tag":"C01","maquina":"Serra circular","status":"Em Obra"},
+  {"tag":"F01","maquina":"Furadeira SDS","status":"Liberado P/ Uso"}
+]

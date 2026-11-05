@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Manutenção - OS</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <nav><a href="index.html">Abrir OS</a></nav>
+      <h1>Atualizar / Fechar OS</h1>
+
+      <label>PIN da manutenção</label>
+      <input id="pin" type="password" inputmode="numeric" />
+      <button id="carrega" type="button">Carregar OS abertas</button>
+
+      <form id="f" style="display:none">
+        <label>OS</label>
+        <select id="os" required></select>
+
+        <label>Status</label>
+        <select id="st" required>
+          <option value="em-manutencao">Em manutenção</option>
+          <option value="aguardando-pecas">Aguardando peças</option>
+          <option value="manutencao-externa">Manutenção externa</option>
+          <option value="liberado-para-uso">Liberado para uso (fecha a OS)</option>
+          <option value="perda-total">Perda total (fecha a OS)</option>
+          <option value="aguardando-analise">Aguardando análise</option>
+        </select>
+
+        <label>Causa analisada</label>
+        <input id="ca" />
+
+        <label>Defeito analisado / considerações</label>
+        <textarea id="de"></textarea>
+
+        <label>Estado de conservação</label>
+        <select id="co">
+          <option>1 - novo</option>
+          <option>2 - entre novo e regular</option>
+          <option selected>3 - regular</option>
+          <option>4 - entre regular e mal conservado</option>
+          <option>5 - mal conservado</option>
+        </select>
+
+        <label>Severidade</label>
+        <select id="sv">
+          <option>1 - limpeza / lubrificação</option>
+          <option>2 - limpeza pesada</option>
+          <option>4 - pequenos reparos</option>
+          <option>5 - troca de peças</option>
+          <option>6 - manutenção externa</option>
+          <option>7 - perda total</option>
+        </select>
+
+        <label>Peças substituídas</label>
+        <input id="pe" />
+
+        <label>Pendências</label>
+        <input id="pd" />
+
+        <label>Data de liberação</label>
+        <input id="dl" type="date" />
+
+        <button>Salvar</button>
+      </form>
+
+      <div id="msg"></div>
+    </main>
+
+    <script src="config.js"></script>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const m = $('msg');
+      $('pin').value = localStorage.getItem('pinManut') || '';
+
+      $('carrega').onclick = async () => {
+        m.className = '';
+        m.textContent = 'Carregando...';
+        try {
+          const r = await fetch(API + '/abertas?pin=' + encodeURIComponent($('pin').value));
+          const d = await r.json();
+          if (!r.ok) throw Error(d.erro);
+          localStorage.setItem('pinManut', $('pin').value);
+          $('os').innerHTML = d.map((i) => `<option value="${i.numero}">#${i.numero} ${i.titulo.replace(/</g, '&lt;')}</option>`).join('');
+          $('f').style.display = d.length ? 'block' : 'none';
+          m.textContent = d.length ? '' : 'Nenhuma OS aberta.';
+        } catch (x) {
+          m.className = 'erro';
+          m.textContent = x.message;
+        }
+      };
+
+      $('f').onsubmit = async (e) => {
+        e.preventDefault();
+        m.className = '';
+        m.textContent = 'Salvando...';
+
+        try {
+          const r = await fetch(API + '/fechar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              pin: $('pin').value,
+              numero: $('os').value,
+              status: $('st').value,
+              causa_analisada: $('ca').value,
+              defeito: $('de').value,
+              conservacao: $('co').value,
+              severidade: $('sv').value,
+              pecas: $('pe').value,
+              pendencias: $('pd').value,
+              liberacao: $('dl').value,
+            }),
+          });
+
+          const d = await r.json();
+          if (!r.ok) throw Error(d.erro);
+          m.className = 'ok';
+          m.textContent = d.fechada ? 'OS fechada.' : 'OS atualizada.';
+          $('carrega').click();
+        } catch (x) {
+          m.className = 'erro';
+          m.textContent = x.message;
+        }
+      };
+    </script>
+  </body>
+</html>
