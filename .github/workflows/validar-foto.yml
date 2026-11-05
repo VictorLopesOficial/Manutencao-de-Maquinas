@@ -1,0 +1,27 @@
+# Segunda barreira: toda OS (Issue com label "os") precisa ter foto, mesmo se criada direto no GitHub.
+name: Validar foto da OS
+on:
+  issues:
+    types: [opened, edited, labeled]
+permissions:
+  issues: write
+jobs:
+  checa:
+    if: contains(github.event.issue.labels.*.name, 'os')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const i = context.payload.issue;
+            const temFoto = /!\[[^\]]*\]\([^)]+\)|<img [^>]*src=/.test(i.body || '');
+            const tem = i.labels.some(l => l.name === 'sem-foto');
+            const base = { ...context.repo, issue_number: i.number };
+            if (!temFoto && !tem) {
+              await github.rest.issues.addLabels({ ...base, labels: ['sem-foto'] });
+              await github.rest.issues.createComment({ ...base, body: '⚠️ Esta OS não tem foto. Anexe uma foto da máquina na descrição ou abra a OS pelo formulário.' });
+              await github.rest.issues.update({ ...base, state: 'closed' });
+            } else if (temFoto && tem) {
+              await github.rest.issues.removeLabel({ ...base, name: 'sem-foto' });
+              await github.rest.issues.update({ ...base, state: 'open' });
+            }

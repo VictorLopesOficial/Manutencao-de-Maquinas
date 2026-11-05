@@ -1,0 +1,35 @@
+# Mantém data/os.csv atualizado com todas as OS (abertas e fechadas).
+name: Exportar OS
+on:
+  issues:
+    types: [opened, edited, closed, reopened, labeled]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: read
+concurrency: exportar
+jobs:
+  exporta:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const issues = await github.paginate(github.rest.issues.listForRepo, { ...context.repo, state: 'all', labels: 'os', per_page: 100 });
+            const st = ['aguardando-analise','em-manutencao','aguardando-pecas','manutencao-externa','liberado-para-uso','perda-total'];
+            const q = s => '"' + String(s ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ') + '"';
+            const rows = [['numero','titulo','status','aberta_em','fechada_em','link'].join(',')];
+            for (const i of issues.filter(x => !x.pull_request)) {
+              const s = i.labels.map(l => l.name).find(n => st.includes(n)) || '';
+              rows.push([i.number, q(i.title), s, i.created_at, i.closed_at || '', i.html_url].join(','));
+            }
+            fs.mkdirSync('data', { recursive: true });
+            fs.writeFileSync('data/os.csv', rows.join('\n') + '\n');
+      - run: |
+          git config user.name "os-bot"; git config user.email "os-bot@users.noreply.github.com"
+          git add data/os.csv
+          git diff --cached --quiet || (git commit -m "Atualiza dados das OS" && git push)
