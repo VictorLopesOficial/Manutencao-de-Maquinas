@@ -1,0 +1,11 @@
+name = "os-manutencao"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+[vars]
+REPO = "SEU-USUARIO/os-manutencao"
+ALLOWED_ORIGIN = "https://SEU-USUARIO.github.io"
+# Segredos (não colocar aqui):
+#   wrangler secret put GH_TOKEN   (token fine-grained: Contents + Issues read/write, só neste repo)
+#   wrangler secret put PIN_ABRIR
+#   wrangler secret put PIN_MANUT

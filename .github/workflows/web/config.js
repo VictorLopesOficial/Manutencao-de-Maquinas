@@ -1,0 +1,4 @@
+// Depois de publicar o Worker, coloque aqui a URL dele.
+window.API = "https://os-manutencao.SEU-SUBDOMINIO.workers.dev";
+window.OBRAS = ["Eurofarma - Produtivos","Eurofarma - Portaria e Creche","Eurofarma - Refeitório","Eurofarma - Aterramento","Eurofarma - Drenagem","Reforma Roma","Roma","Nápoles","Tívoli","Supermercado BH","Novo Nordisk","Hipolabor","Sicoob","Sicredi","Vêneto","Hospital Otorrino Center (HOC)","Hospital Otorrino Center (HGA)","Vivendas do Lago","Galpão","Manutenção","Outra"];
+window.CAUSAS = ["Danificação por desgaste de uso","Manutenção preventiva de rotina","Danificação por mal uso","Máquina não TAGEADA","Danificação por descuido em utilização","Danificação por falta de manutenção em obra (Lubrificação/Limpeza/Outros)","Remoção total ou parcial da TAG","Danificação por mal armazenamento","Danificação em empréstimo de máquina","Outra"];
